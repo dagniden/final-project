@@ -1,0 +1,142 @@
+from drf_spectacular.utils import (OpenApiExample, OpenApiResponse,
+                                   extend_schema, inline_serializer)
+from rest_framework import generics
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.serializers import CharField, EmailField, Serializer
+from rest_framework.views import APIView
+from rest_framework_simplejwt.views import (TokenObtainPairView,
+                                            TokenRefreshView)
+
+from users.models import User
+from users.serializers import (CustomTokenObtainPairSerializer,
+                               UserRegistrationSerializer, UserSerializer)
+
+
+class TokenRefreshRequestSerializer(Serializer):
+    refresh = CharField()
+
+
+class TokenRefreshResponseSerializer(Serializer):
+    access = CharField()
+
+
+@extend_schema(
+    tags=["Auth"],
+    summary="Регистрация пользователя",
+    description="Создает нового пользователя и возвращает его базовые данные.",
+    request=UserRegistrationSerializer,
+    responses={201: UserSerializer},
+    examples=[
+        OpenApiExample(
+            "Пример регистрации",
+            value={
+                "username": "ivan",
+                "email": "ivan@example.com",
+                "password": "SecurePass123!",
+            },
+            request_only=True,
+        )
+    ],
+)
+class UserCreateAPIView(generics.CreateAPIView):
+    serializer_class = UserRegistrationSerializer
+    permission_classes = [AllowAny]
+
+
+@extend_schema(
+    tags=["Auth"],
+    summary="Получить JWT токены",
+    description="Аутентификация по email и паролю. Возвращает access и refresh токены.",
+    request=inline_serializer(
+        name="TokenObtainRequest",
+        fields={
+            "email": EmailField(),
+            "password": CharField(),
+        },
+    ),
+    responses={
+        200: inline_serializer(
+            name="TokenObtainResponse",
+            fields={
+                "refresh": CharField(),
+                "access": CharField(),
+            },
+        ),
+        401: OpenApiResponse(description="Неверные учетные данные."),
+    },
+    examples=[
+        OpenApiExample(
+            "Пример логина",
+            value={
+                "email": "ivan@example.com",
+                "password": "SecurePass123!",
+            },
+            request_only=True,
+        )
+    ],
+)
+class CustomTokenObtainPairView(TokenObtainPairView):
+    permission_classes = [AllowAny]
+    serializer_class = CustomTokenObtainPairSerializer
+
+
+@extend_schema(
+    tags=["Auth"],
+    summary="Обновить access token",
+    description="Принимает refresh token и возвращает новый access token.",
+    request=TokenRefreshRequestSerializer,
+    responses={200: TokenRefreshResponseSerializer},
+    examples=[
+        OpenApiExample(
+            "Пример refresh",
+            value={
+                "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            },
+            request_only=True,
+        )
+    ],
+)
+class CustomTokenRefreshView(TokenRefreshView):
+    permission_classes = [AllowAny]
+
+
+@extend_schema(
+    tags=["Users"],
+    summary="Получить текущего пользователя",
+    responses={200: UserSerializer},
+)
+class UserMeAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(UserSerializer(request.user).data)
+
+
+@extend_schema(
+    tags=["Users"],
+    summary="Получить список пользователей",
+    responses={200: UserSerializer(many=True)},
+)
+class UserListAPIView(generics.ListAPIView):
+    queryset = User.objects.order_by("id")
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]
+
+
+@extend_schema(
+    tags=["Users"],
+    summary="Получить пользователя по id",
+    responses={200: UserSerializer},
+)
+class UserDetailAPIView(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        user = super().get_object()
+        if self.request.user.is_staff or self.request.user == user:
+            return user
+        raise PermissionDenied("You do not have permission to perform this action.")
