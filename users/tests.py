@@ -46,19 +46,6 @@ class UsersAPITestCase(APITestCase):
         self.assertIn("access", response.data)
         self.assertIn("refresh", response.data)
 
-    def test_auth_me_requires_authentication(self):
-        response = self.client.get("/api/v1/auth/me")
-
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-    def test_auth_me_returns_current_user(self):
-        self.client.force_authenticate(self.user)
-
-        response = self.client.get("/api/v1/auth/me")
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["email"], self.user.email)
-
     def test_user_me_returns_current_user(self):
         self.client.force_authenticate(self.user)
 
@@ -89,3 +76,18 @@ class UsersAPITestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["email"], self.user.email)
+
+    def test_user_can_get_own_detail(self):
+        self.client.force_authenticate(self.user)
+
+        response = self.client.get(f"/api/v1/users/{self.user.id}")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["email"], self.user.email)
+
+    def test_regular_user_cannot_get_another_user_detail(self):
+        self.client.force_authenticate(self.user)
+
+        response = self.client.get(f"/api/v1/users/{self.admin.id}")
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

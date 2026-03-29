@@ -1,17 +1,17 @@
-from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema, inline_serializer
+from drf_spectacular.utils import (OpenApiExample, OpenApiResponse,
+                                   extend_schema, inline_serializer)
 from rest_framework import generics
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.serializers import CharField, EmailField, Serializer
 from rest_framework.views import APIView
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import (TokenObtainPairView,
+                                            TokenRefreshView)
 
 from users.models import User
-from users.serializers import (
-    CustomTokenObtainPairSerializer,
-    UserRegistrationSerializer,
-    UserSerializer,
-)
+from users.serializers import (CustomTokenObtainPairSerializer,
+                               UserRegistrationSerializer, UserSerializer)
 
 
 class TokenRefreshRequestSerializer(Serializer):
@@ -103,18 +103,6 @@ class CustomTokenRefreshView(TokenRefreshView):
 
 
 @extend_schema(
-    tags=["Auth"],
-    summary="Получить текущего пользователя",
-    responses={200: UserSerializer},
-)
-class AuthMeAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        return Response(UserSerializer(request.user).data)
-
-
-@extend_schema(
     tags=["Users"],
     summary="Получить текущего пользователя",
     responses={200: UserSerializer},
@@ -145,4 +133,10 @@ class UserListAPIView(generics.ListAPIView):
 class UserDetailAPIView(generics.RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        user = super().get_object()
+        if self.request.user.is_staff or self.request.user == user:
+            return user
+        raise PermissionDenied("You do not have permission to perform this action.")
