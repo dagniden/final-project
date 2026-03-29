@@ -1,10 +1,17 @@
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema, inline_serializer
 from rest_framework import generics
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.serializers import CharField, EmailField, Serializer
+from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from users.serializers import CustomTokenObtainPairSerializer, UserSerializer
+from users.models import User
+from users.serializers import (
+    CustomTokenObtainPairSerializer,
+    UserRegistrationSerializer,
+    UserSerializer,
+)
 
 
 class TokenRefreshRequestSerializer(Serializer):
@@ -19,7 +26,7 @@ class TokenRefreshResponseSerializer(Serializer):
     tags=["Auth"],
     summary="Регистрация пользователя",
     description="Создает нового пользователя и возвращает его базовые данные.",
-    request=UserSerializer,
+    request=UserRegistrationSerializer,
     responses={201: UserSerializer},
     examples=[
         OpenApiExample(
@@ -34,7 +41,7 @@ class TokenRefreshResponseSerializer(Serializer):
     ],
 )
 class UserCreateAPIView(generics.CreateAPIView):
-    serializer_class = UserSerializer
+    serializer_class = UserRegistrationSerializer
     permission_classes = [AllowAny]
 
 
@@ -93,3 +100,49 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 )
 class CustomTokenRefreshView(TokenRefreshView):
     permission_classes = [AllowAny]
+
+
+@extend_schema(
+    tags=["Auth"],
+    summary="Получить текущего пользователя",
+    responses={200: UserSerializer},
+)
+class AuthMeAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(UserSerializer(request.user).data)
+
+
+@extend_schema(
+    tags=["Users"],
+    summary="Получить текущего пользователя",
+    responses={200: UserSerializer},
+)
+class UserMeAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(UserSerializer(request.user).data)
+
+
+@extend_schema(
+    tags=["Users"],
+    summary="Получить список пользователей",
+    responses={200: UserSerializer(many=True)},
+)
+class UserListAPIView(generics.ListAPIView):
+    queryset = User.objects.order_by("id")
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]
+
+
+@extend_schema(
+    tags=["Users"],
+    summary="Получить пользователя по id",
+    responses={200: UserSerializer},
+)
+class UserDetailAPIView(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]
