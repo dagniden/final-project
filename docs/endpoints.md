@@ -1,33 +1,46 @@
 # Эндпоинты API
 
-## Процесс `1-BM`
+## Процесс `1-BM` (Book Management)
 
 ### Список эндпоинтов
 
-- `POST /books` — создать книгу
-- `GET /books` — получить список книг, выполнить поиск и фильтрацию
+- `POST /books` — создать карточку книги
+- `GET /books` — получить список карточек книг, выполнить поиск и фильтрацию
 - `GET /books/{id}` — получить карточку книги
-- `PATCH /books/{id}` — изменить данные книги
-- `DELETE /books/{id}` — удалить книгу
+- `PATCH /books/{id}` — изменить данные карточки книги
+- `DELETE /books/{id}` — удалить карточку книги
+- `GET /books/{id}/availability` — получить агрегатную доступность карточки книги
+- `POST /book-items` — зарегистрировать экземпляр книги, передав `book_title` в теле запроса
+- `GET /book-items` — получить список экземпляров книг, в том числе с фильтрацией по `book_title_id`
+- `GET /book-items/{id}` — получить информацию об экземпляре книги
+- `PATCH /book-items/{id}` — изменить данные экземпляра книги
+- `DELETE /book-items/{id}` — удалить экземпляр книги
 
 ### Трассировка требований
 
 | Юз кейс | Требование | Эндпоинт |
 | --- | --- | --- |
-| `1-BM-US-01` | Создать книгу | `POST /books` |
-| `1-BM-US-02` | Просмотреть список книг | `GET /books` |
+| `1-BM-US-01` | Создать карточку книги | `POST /books` |
+| `1-BM-US-02` | Просмотреть список карточек книг | `GET /books` |
 | `1-BM-US-03` | Просмотреть карточку книги | `GET /books/{id}` |
-| `1-BM-US-04` | Изменить данные книги | `PATCH /books/{id}` |
-| `1-BM-US-05` | Удалить книгу | `DELETE /books/{id}` |
-| `1-BM-US-06` | Найти книгу по названию | `GET /books` |
-| `1-BM-US-07` | Найти книги по автору | `GET /books` |
-| `1-BM-US-08` | Найти книги по жанру | `GET /books` |
-| `1-BM-US-09` | Проверить наличие книги | `GET /books`, `GET /books/{id}` |
-| `1-BM-US-10` | Получить список книг по нескольким критериям | `GET /books` |
-| `1-BM-US-11` | Проверить корректность введенных данных книги | `POST /books`, `PATCH /books/{id}` |
-| `1-BM-US-12` | Ограничить доступ к управлению книгами | `POST /books`, `PATCH /books/{id}`, `DELETE /books/{id}` |
+| `1-BM-US-04` | Изменить данные карточки книги | `PATCH /books/{id}` |
+| `1-BM-US-05` | Удалить карточку книги | `DELETE /books/{id}` |
+| `1-BM-US-06` | Найти карточку книги по названию | `GET /books` |
+| `1-BM-US-07` | Найти карточки книг по автору | `GET /books` |
+| `1-BM-US-08` | Найти карточки книг по жанру | `GET /books` |
+| `1-BM-US-09` | Проверить наличие книги в каталоге | `GET /books`, `GET /books/{id}`, `GET /books/{id}/availability` |
+| `1-BM-US-10` | Получить список карточек книг по нескольким критериям | `GET /books` |
+| `1-BM-US-11` | Проверить корректность введенных данных карточки книги | `POST /books`, `PATCH /books/{id}` |
+| `1-BM-US-12` | Ограничить доступ к управлению карточками книг | `POST /books`, `PATCH /books/{id}`, `DELETE /books/{id}` |
+| `1-BM-US-13` | Зарегистрировать экземпляр книги | `POST /book-items` |
+| `1-BM-US-14` | Просмотреть список экземпляров книги | `GET /book-items` |
+| `1-BM-US-15` | Просмотреть информацию об экземпляре книги | `GET /book-items/{id}` |
+| `1-BM-US-16` | Изменить данные экземпляра книги | `PATCH /book-items/{id}` |
+| `1-BM-US-17` | Удалить экземпляр книги | `DELETE /book-items/{id}` |
+| `1-BM-US-18` | Проверить корректность введенных данных экземпляра книги | `POST /book-items`, `PATCH /book-items/{id}` |
+| `1-BM-US-19` | Ограничить доступ к управлению экземплярами книг | `POST /book-items`, `PATCH /book-items/{id}`, `DELETE /book-items/{id}` |
 
-## Процесс `2-AM`
+## Процесс `2-AM` (Author Management)
 
 ### Список эндпоинтов
 
@@ -49,69 +62,89 @@
 | `2-AM-US-06` | Проверить корректность введенных данных автора | `POST /authors`, `PATCH /authors/{id}` |
 | `2-AM-US-07` | Ограничить доступ к управлению авторами | `POST /authors`, `PATCH /authors/{id}`, `DELETE /authors/{id}` |
 
-## Процесс `3-UM`
+## Процесс `3-GM` (Genre Management)
 
 ### Список эндпоинтов
 
-- `POST /auth/register` — зарегистрировать пользователя
-- `POST /auth/login` — авторизовать пользователя
+- `POST /genres` — создать жанр
+- `GET /genres` — получить список жанров
+- `GET /genres/{id}` — получить карточку жанра
+- `PATCH /genres/{id}` — изменить данные жанра
+- `DELETE /genres/{id}` — удалить жанр
+
+### Трассировка требований
+
+| Юз кейс | Требование | Эндпоинт |
+| --- | --- | --- |
+| `3-GM-US-01` | Создать жанр | `POST /genres` |
+| `3-GM-US-02` | Просмотреть список жанров | `GET /genres` |
+| `3-GM-US-03` | Просмотреть карточку жанра | `GET /genres/{id}` |
+| `3-GM-US-04` | Изменить данные жанра | `PATCH /genres/{id}` |
+| `3-GM-US-05` | Удалить жанр | `DELETE /genres/{id}` |
+| `3-GM-US-06` | Проверить корректность введенных данных жанра | `POST /genres`, `PATCH /genres/{id}` |
+| `3-GM-US-07` | Ограничить доступ к управлению жанрами | `POST /genres`, `PATCH /genres/{id}`, `DELETE /genres/{id}` |
+
+## Процесс `4-UM` (User Management)
+
+### Список эндпоинтов
+
+- `POST /auth/register` — зарегистрировать пользователя по `email`, `username` и `password`
+- `POST /auth/login` — авторизовать пользователя по `email` и `password`
 - `GET /users/{id}` — получить информацию о пользователе
 - `GET /users/me` — получить информацию о текущем пользователе
 - `GET /users` — получить список пользователей
-- `POST /users/me/telegram/link` — начать или завершить привязку Telegram
-- `DELETE /users/me/telegram/link` — отвязать Telegram
-- `GET /users/me/notifications/channels` — получить список подключенных каналов уведомлений
 
 ### Трассировка требований
 
 | Юз кейс | Требование | Эндпоинт |
 | --- | --- | --- |
-| `3-UM-US-01` | Зарегистрировать пользователя | `POST /auth/register` |
-| `3-UM-US-02` | Авторизовать пользователя | `POST /auth/login` |
-| `3-UM-US-03` | Просмотреть информацию о пользователе | `GET /users/{id}`, `GET /users/me` |
-| `3-UM-US-04` | Получить список пользователей | `GET /users` |
-| `3-UM-US-05` | Проверить корректность введенных регистрационных данных | `POST /auth/register` |
-| `3-UM-US-06` | Ограничить доступ к данным пользователей | `GET /users/{id}`, `GET /users/me`, `GET /users` |
+| `4-UM-US-01` | Зарегистрировать пользователя | `POST /auth/register` |
+| `4-UM-US-02` | Авторизовать пользователя | `POST /auth/login` |
+| `4-UM-US-03` | Просмотреть информацию о пользователе | `GET /users/{id}`, `GET /users/me` |
+| `4-UM-US-04` | Получить список пользователей | `GET /users` |
+| `4-UM-US-05` | Проверить корректность введенных регистрационных данных | `POST /auth/register` |
+| `4-UM-US-06` | Ограничить доступ к данным пользователей | `GET /users/{id}`, `GET /users/me`, `GET /users` |
 
-## Процесс `4-BI`
+## Процесс `5-BI` (Book Issue)
+
+Процесс выдачи и возврата реализуется через ресурс `loans`, который отражает модель `Loan` и всегда работает с конкретным экземпляром книги `BookItem`.
 
 ### Список эндпоинтов
 
-- `POST /issues` — оформить выдачу книги
-- `GET /issues` — получить список выдач
-- `GET /issues/{id}` — получить информацию о конкретной выдаче
-- `PATCH /issues/{id}/return` — зафиксировать возврат книги
-- `GET /books/{id}/availability` — проверить возможность выдачи книги
-- `POST /issues/{id}/reminder/send` — вручную отправить напоминание о возврате книги
-- `GET /notifications` — получить журнал отправленных уведомлений
+- `POST /loans` — оформить выдачу экземпляра книги
+- `GET /loans` — получить список выдач
+- `GET /loans/{id}` — получить информацию о конкретной выдаче
+- `PATCH /loans/{id}` — обновить данные выдачи, включая фиксацию возврата экземпляра книги
+- `POST /loans/{id}/reminder/send` — вручную отправить напоминание о возврате
 
 ### Трассировка требований
 
 | Юз кейс | Требование | Эндпоинт |
 | --- | --- | --- |
-| `4-BI-US-01` | Оформить выдачу книги | `POST /issues` |
-| `4-BI-US-02` | Просмотреть список выдач | `GET /issues` |
-| `4-BI-US-03` | Просмотреть информацию о конкретной выдаче | `GET /issues/{id}` |
-| `4-BI-US-04` | Отследить статус возврата книги | `GET /issues`, `GET /issues/{id}` |
-| `4-BI-US-05` | Зафиксировать возврат книги | `PATCH /issues/{id}/return` |
-| `4-BI-US-06` | Проверить возможность выдачи книги | `GET /books/{id}/availability` |
-| `4-BI-US-07` | Ограничить доступ к операциям выдачи | `POST /issues`, `PATCH /issues/{id}/return` |
-| `4-BI-US-08` | Отправить напоминание о возврате книги за 5 дней | `POST /issues/{id}/reminder/send`, фоновая задача отправки уведомлений |
+| `5-BI-US-01` | Оформить выдачу экземпляра книги | `POST /loans` |
+| `5-BI-US-02` | Просмотреть список выдач | `GET /loans` |
+| `5-BI-US-03` | Просмотреть информацию о конкретной выдаче | `GET /loans/{id}` |
+| `5-BI-US-04` | Отследить статус возврата экземпляра книги | `GET /loans`, `GET /loans/{id}` |
+| `5-BI-US-05` | Зафиксировать возврат экземпляра книги | `PATCH /loans/{id}` |
+| `5-BI-US-06` | Проверить возможность выдачи экземпляра книги | `GET /book-items/{id}` |
+| `5-BI-US-07` | Ограничить доступ к операциям выдачи и возврата | `POST /loans`, `PATCH /loans/{id}` |
+| `5-BI-US-08` | Отправить напоминание о возврате экземпляра книги за 5 дней | `POST /loans/{id}/reminder/send`, фоновая задача отправки уведомлений |
+| `5-BI-US-09` | Проверить корректность данных выдачи и возврата | `POST /loans`, `PATCH /loans/{id}` |
 
-## Процесс `5-AC`
+## Процесс `6-AC` (Access Control)
 
 ### Список эндпоинтов
 
 - `POST /auth/login` — выполнить аутентификацию и получить JWT-токен
-- `GET /auth/me` — проверить подлинность токена и получить данные текущего пользователя
 
 ### Трассировка требований
 
 | Юз кейс | Требование | Эндпоинт |
 | --- | --- | --- |
-| `5-AC-US-01` | Выполнить аутентификацию пользователя | `POST /auth/login` |
-| `5-AC-US-02` | Проверить подлинность запроса | `GET /auth/me` |
-| `5-AC-US-03` | Предоставить доступ к разрешенным операциям | `GET /auth/me`, `POST /users/me/telegram/link`, `DELETE /users/me/telegram/link`, `GET /users/me/notifications/channels`, `POST /issues/{id}/reminder/send`, `GET /notifications`, защищенные бизнес-эндпоинты |
-| `5-AC-US-04` | Запретить доступ к защищенным операциям | `GET /auth/me`, `POST /users/me/telegram/link`, `DELETE /users/me/telegram/link`, `GET /users/me/notifications/channels`, `POST /issues/{id}/reminder/send`, `GET /notifications`, защищенные бизнес-эндпоинты |
-| `5-AC-US-05` | Ограничить доступ к управлению книгами и авторами | `POST /books`, `PATCH /books/{id}`, `DELETE /books/{id}`, `POST /authors`, `PATCH /authors/{id}`, `DELETE /authors/{id}` |
-| `5-AC-US-06` | Ограничить доступ к данным пользователей и операциям выдачи | `GET /users/{id}`, `GET /users`, `GET /users/me/notifications/channels`, `POST /users/me/telegram/link`, `DELETE /users/me/telegram/link`, `POST /issues`, `PATCH /issues/{id}/return`, `POST /issues/{id}/reminder/send`, `GET /notifications` |
+| `6-AC-US-01` | Выполнить аутентификацию пользователя | `POST /auth/login` |
+| `6-AC-US-02` | Проверить подлинность запроса | JWT-аутентификация на защищенных бизнес-эндпоинтах |
+| `6-AC-US-03` | Предоставить доступ к разрешенным операциям | `POST /auth/login`, защищенные бизнес-эндпоинты с JWT-аутентификацией и проверкой прав |
+| `6-AC-US-04` | Запретить доступ к защищенным операциям | защищенные бизнес-эндпоинты с JWT-аутентификацией и проверкой прав |
+| `6-AC-US-05` | Ограничить доступ к управлению каталогом, авторами и жанрами | `POST /books`, `PATCH /books/{id}`, `DELETE /books/{id}`, `POST /book-items`, `PATCH /book-items/{id}`, `DELETE /book-items/{id}`, `POST /authors`, `PATCH /authors/{id}`, `DELETE /authors/{id}`, `POST /genres`, `PATCH /genres/{id}`, `DELETE /genres/{id}` |
+| `6-AC-US-06` | Ограничить доступ к данным пользователей и операциям выдачи | `GET /users/{id}`, `GET /users/me`, `GET /users`, `POST /loans`, `PATCH /loans/{id}`, `POST /loans/{id}/reminder/send` |
+| `6-AC-US-07` | Разграничить базовые права в MVP | `POST /books`, `PATCH /books/{id}`, `DELETE /books/{id}`, `POST /book-items`, `PATCH /book-items/{id}`, `DELETE /book-items/{id}`, `POST /authors`, `PATCH /authors/{id}`, `DELETE /authors/{id}`, `POST /genres`, `PATCH /genres/{id}`, `DELETE /genres/{id}`, `POST /loans`, `PATCH /loans/{id}` |
