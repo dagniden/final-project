@@ -1,5 +1,5 @@
-from drf_spectacular.utils import OpenApiResponse, extend_schema
 from django.db.models import Count, Q
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import generics
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
@@ -29,7 +29,9 @@ class StaffWritePublicReadMixin:
 
 class ProtectedDeleteMixin:
     related_manager_name = None
-    related_error_message = "Cannot delete this object while it is linked to book titles."
+    related_error_message = (
+        "Cannot delete this object while it is linked to book titles."
+    )
 
     def perform_destroy(self, instance):
         if getattr(instance, self.related_manager_name).exists():
@@ -41,7 +43,9 @@ class ProtectedDeleteMixin:
     tags=["Authors"],
     summary="Получить список авторов или создать автора",
 )
-class AuthorListCreateAPIView(StaffWriteAuthenticatedReadMixin, generics.ListCreateAPIView):
+class AuthorListCreateAPIView(
+    StaffWriteAuthenticatedReadMixin, generics.ListCreateAPIView
+):
     queryset = Author.objects.order_by("full_name", "id")
     serializer_class = AuthorSerializer
 
@@ -70,7 +74,9 @@ class AuthorDetailAPIView(
     tags=["Genres"],
     summary="Получить список жанров или создать жанр",
 )
-class GenreListCreateAPIView(StaffWriteAuthenticatedReadMixin, generics.ListCreateAPIView):
+class GenreListCreateAPIView(
+    StaffWriteAuthenticatedReadMixin, generics.ListCreateAPIView
+):
     queryset = Genre.objects.order_by("name", "id")
     serializer_class = GenreSerializer
 

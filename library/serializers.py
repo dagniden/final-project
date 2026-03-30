@@ -78,7 +78,9 @@ class BookTitleSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         authors = attrs.get("authors")
         if self.instance is None and not authors:
-            raise serializers.ValidationError({"authors": "At least one author is required."})
+            raise serializers.ValidationError(
+                {"authors": "At least one author is required."}
+            )
         return attrs
 
 
@@ -109,5 +111,7 @@ class BookItemSerializer(serializers.ModelSerializer):
             queryset = queryset.exclude(pk=self.instance.pk)
 
         if queryset.exists():
-            raise serializers.ValidationError("Book item with this inventory number already exists.")
+            raise serializers.ValidationError(
+                "Book item with this inventory number already exists."
+            )
         return value

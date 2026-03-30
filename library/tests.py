@@ -1,8 +1,8 @@
 from datetime import timedelta
 
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
-from django.utils import timezone
 
 from library.models import Author, BookItem, BookTitle, Genre, Loan
 from users.models import User
@@ -352,7 +352,9 @@ class BookManagementAPITestCase(APITestCase):
         response = self.client.delete(f"/api/v1/books/{self.book.id}")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["detail"], "Cannot delete book linked to book items.")
+        self.assertEqual(
+            response.data["detail"], "Cannot delete book linked to book items."
+        )
 
     def test_books_list_supports_combined_filters(self):
         response = self.client.get(
@@ -388,7 +390,9 @@ class BookManagementAPITestCase(APITestCase):
         response = self.client.get(f"/api/v1/book-items/{self.available_item.id}")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["inventory_number"], self.available_item.inventory_number)
+        self.assertEqual(
+            response.data["inventory_number"], self.available_item.inventory_number
+        )
 
     def test_staff_can_create_book_item(self):
         self.client.force_authenticate(self.admin)
@@ -423,11 +427,16 @@ class BookManagementAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_book_items_list_supports_book_title_filter(self):
-        response = self.client.get("/api/v1/book-items", {"book_title_id": self.book.id})
+        response = self.client.get(
+            "/api/v1/book-items", {"book_title_id": self.book.id}
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
-        self.assertEqual({item["id"] for item in response.data}, {self.available_item.id, self.loaned_item.id})
+        self.assertEqual(
+            {item["id"] for item in response.data},
+            {self.available_item.id, self.loaned_item.id},
+        )
 
     def test_book_item_inventory_number_must_be_unique(self):
         self.client.force_authenticate(self.admin)
@@ -478,4 +487,6 @@ class BookManagementAPITestCase(APITestCase):
         response = self.client.delete(f"/api/v1/book-items/{loan_item.id}")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["detail"], "Cannot delete book item linked to loans.")
+        self.assertEqual(
+            response.data["detail"], "Cannot delete book item linked to loans."
+        )

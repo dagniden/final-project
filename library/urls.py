@@ -21,6 +21,10 @@ urlpatterns = [
         BookAvailabilityAPIView.as_view(),
         name="book_availability",
     ),
-    path("book-items", BookItemListCreateAPIView.as_view(), name="book_item_list_create"),
-    path("book-items/<int:pk>", BookItemDetailAPIView.as_view(), name="book_item_detail"),
+    path(
+        "book-items", BookItemListCreateAPIView.as_view(), name="book_item_list_create"
+    ),
+    path(
+        "book-items/<int:pk>", BookItemDetailAPIView.as_view(), name="book_item_detail"
+    ),
 ]

@@ -108,7 +108,8 @@ class Loan(models.Model):
                 name="unique_active_loan_per_book_item",
             ),
             models.CheckConstraint(
-                condition=Q(returned_at__isnull=True) | Q(returned_at__gte=F("issued_at")),
+                condition=Q(returned_at__isnull=True)
+                | Q(returned_at__gte=F("issued_at")),
                 name="loan_returned_at_not_before_issued_at",
             ),
         ]
