@@ -9,6 +9,20 @@ class AuthorSerializer(serializers.ModelSerializer):
         model = Author
         fields = ("id", "full_name", "birth_date", "death_date", "biography")
         read_only_fields = ("id",)
+        extra_kwargs = {
+            "full_name": {
+                "help_text": "Полное имя автора для отображения в каталоге.",
+            },
+            "birth_date": {
+                "help_text": "Дата рождения автора в формате YYYY-MM-DD.",
+            },
+            "death_date": {
+                "help_text": "Дата смерти автора в формате YYYY-MM-DD, если применимо.",
+            },
+            "biography": {
+                "help_text": "Краткая биография автора или служебное описание.",
+            },
+        }
 
     def validate(self, attrs):
         birth_date = attrs.get("birth_date", getattr(self.instance, "birth_date", None))
@@ -27,19 +41,32 @@ class GenreSerializer(serializers.ModelSerializer):
         model = Genre
         fields = ("id", "name", "description")
         read_only_fields = ("id",)
+        extra_kwargs = {
+            "name": {
+                "help_text": "Уникальное название жанра.",
+            },
+            "description": {
+                "help_text": "Необязательное пояснение, что включает жанр.",
+            },
+        }
 
 
 class BookTitleSerializer(serializers.ModelSerializer):
     authors = serializers.PrimaryKeyRelatedField(
         many=True,
         queryset=Author.objects.all(),
+        help_text="Список идентификаторов авторов. Требуется минимум один автор.",
     )
     genres = serializers.PrimaryKeyRelatedField(
         many=True,
         queryset=Genre.objects.all(),
         required=False,
+        help_text="Список идентификаторов жанров. Поле можно не передавать.",
     )
-    is_available = serializers.BooleanField(read_only=True)
+    is_available = serializers.BooleanField(
+        read_only=True,
+        help_text="Агрегатная доступность книги: `true`, если есть хотя бы один доступный экземпляр.",
+    )
 
     class Meta:
         model = BookTitle
@@ -58,6 +85,30 @@ class BookTitleSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "is_available", "created_at", "updated_at")
+        extra_kwargs = {
+            "title": {"help_text": "Название книги."},
+            "description": {
+                "help_text": "Аннотация или краткое описание издания.",
+            },
+            "publication_year": {
+                "help_text": "Год публикации издания.",
+            },
+            "isbn": {
+                "help_text": "ISBN книги. При наличии должен быть уникальным.",
+            },
+            "publisher": {
+                "help_text": "Название издательства.",
+            },
+            "language": {
+                "help_text": "Язык издания.",
+            },
+            "created_at": {
+                "help_text": "Дата и время создания карточки книги.",
+            },
+            "updated_at": {
+                "help_text": "Дата и время последнего обновления карточки книги.",
+            },
+        }
 
     def validate_authors(self, value):
         if not value:
@@ -86,10 +137,16 @@ class BookTitleSerializer(serializers.ModelSerializer):
 
 
 class BookAvailabilitySerializer(serializers.Serializer):
-    book_id = serializers.IntegerField()
-    is_available = serializers.BooleanField()
-    available_items_count = serializers.IntegerField()
-    total_items_count = serializers.IntegerField()
+    book_id = serializers.IntegerField(help_text="Идентификатор карточки книги.")
+    is_available = serializers.BooleanField(
+        help_text="`true`, если у книги есть хотя бы один экземпляр со статусом `available`."
+    )
+    available_items_count = serializers.IntegerField(
+        help_text="Количество доступных для выдачи экземпляров книги."
+    )
+    total_items_count = serializers.IntegerField(
+        help_text="Общее количество зарегистрированных экземпляров книги."
+    )
 
 
 class BookItemSerializer(serializers.ModelSerializer):
@@ -105,6 +162,26 @@ class BookItemSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "created_at", "updated_at")
+        extra_kwargs = {
+            "book_title": {
+                "help_text": "Идентификатор карточки книги, к которой относится экземпляр.",
+            },
+            "inventory_number": {
+                "help_text": "Уникальный инвентарный номер экземпляра.",
+            },
+            "status": {
+                "help_text": "Статус экземпляра: `available`, `loaned` или `unavailable`.",
+            },
+            "location": {
+                "help_text": "Место хранения экземпляра в библиотеке.",
+            },
+            "created_at": {
+                "help_text": "Дата и время регистрации экземпляра.",
+            },
+            "updated_at": {
+                "help_text": "Дата и время последнего изменения экземпляра.",
+            },
+        }
 
     def validate_inventory_number(self, value):
         queryset = BookItem.objects.filter(inventory_number=value)
@@ -119,7 +196,10 @@ class BookItemSerializer(serializers.ModelSerializer):
 
 
 class LoanSerializer(serializers.ModelSerializer):
-    is_active = serializers.BooleanField(read_only=True)
+    is_active = serializers.BooleanField(
+        read_only=True,
+        help_text="`true`, если книга еще не возвращена и выдача активна.",
+    )
 
     class Meta:
         model = Loan
@@ -135,6 +215,29 @@ class LoanSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "is_active", "created_at", "updated_at")
+        extra_kwargs = {
+            "user": {
+                "help_text": "Идентификатор пользователя, которому оформляется выдача.",
+            },
+            "book_item": {
+                "help_text": "Идентификатор экземпляра книги. На момент выдачи он должен быть доступен.",
+            },
+            "issued_at": {
+                "help_text": "Дата и время выдачи в формате ISO 8601.",
+            },
+            "due_date": {
+                "help_text": "Плановая дата возврата в формате YYYY-MM-DD.",
+            },
+            "returned_at": {
+                "help_text": "Дата и время возврата в формате ISO 8601. Для активной выдачи может быть `null`.",
+            },
+            "created_at": {
+                "help_text": "Дата и время создания записи выдачи.",
+            },
+            "updated_at": {
+                "help_text": "Дата и время последнего изменения записи выдачи.",
+            },
+        }
 
     def validate(self, attrs):
         if self.instance is not None:
@@ -161,3 +264,8 @@ class LoanSerializer(serializers.ModelSerializer):
             return super().update(instance, validated_data)
         except DjangoValidationError as exc:
             raise serializers.ValidationError(exc.message_dict)
+
+
+class LoanReminderResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField(help_text="Результат обработки запроса на отправку напоминания.")
+    loan_id = serializers.IntegerField(help_text="Идентификатор выдачи, для которой обработано напоминание.")

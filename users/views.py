@@ -22,12 +22,19 @@ class TokenRefreshResponseSerializer(Serializer):
     access = CharField()
 
 
+# region API Docs
 @extend_schema(
     tags=["Auth"],
     summary="Регистрация пользователя",
-    description="Создает нового пользователя и возвращает его базовые данные.",
+    description=(
+        "Создает новую учетную запись пользователя. Эндпоинт публичный и возвращает базовые "
+        "поля созданного пользователя без пароля."
+    ),
     request=UserRegistrationSerializer,
-    responses={201: UserSerializer},
+    responses={
+        201: UserSerializer,
+        400: OpenApiResponse(description="Ошибка валидации регистрационных данных."),
+    },
     examples=[
         OpenApiExample(
             "Пример регистрации",
@@ -40,11 +47,13 @@ class TokenRefreshResponseSerializer(Serializer):
         )
     ],
 )
+# endregion
 class UserCreateAPIView(generics.CreateAPIView):
     serializer_class = UserRegistrationSerializer
     permission_classes = [AllowAny]
 
 
+# region API Docs
 @extend_schema(
     tags=["Auth"],
     summary="Получить JWT токены",
@@ -77,17 +86,22 @@ class UserCreateAPIView(generics.CreateAPIView):
         )
     ],
 )
+# endregion
 class CustomTokenObtainPairView(TokenObtainPairView):
     permission_classes = [AllowAny]
     serializer_class = CustomTokenObtainPairSerializer
 
 
+# region API Docs
 @extend_schema(
     tags=["Auth"],
     summary="Обновить access token",
     description="Принимает refresh token и возвращает новый access token.",
     request=TokenRefreshRequestSerializer,
-    responses={200: TokenRefreshResponseSerializer},
+    responses={
+        200: TokenRefreshResponseSerializer,
+        401: OpenApiResponse(description="Refresh token недействителен или истек."),
+    },
     examples=[
         OpenApiExample(
             "Пример refresh",
@@ -98,15 +112,22 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         )
     ],
 )
+# endregion
 class CustomTokenRefreshView(TokenRefreshView):
     permission_classes = [AllowAny]
 
 
+# region API Docs
 @extend_schema(
     tags=["Users"],
     summary="Получить текущего пользователя",
-    responses={200: UserSerializer},
+    description="Возвращает профиль пользователя, от имени которого выполнен запрос.",
+    responses={
+        200: UserSerializer,
+        401: OpenApiResponse(description="Пользователь не аутентифицирован."),
+    },
 )
+# endregion
 class UserMeAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -114,22 +135,38 @@ class UserMeAPIView(APIView):
         return Response(UserSerializer(request.user).data)
 
 
+# region API Docs
 @extend_schema(
     tags=["Users"],
     summary="Получить список пользователей",
-    responses={200: UserSerializer(many=True)},
+    description="Возвращает список всех пользователей системы. Доступно только сотрудникам библиотеки.",
+    responses={
+        200: UserSerializer(many=True),
+        403: OpenApiResponse(description="Эндпоинт доступен только сотрудникам библиотеки."),
+    },
 )
+# endregion
 class UserListAPIView(generics.ListAPIView):
     queryset = User.objects.order_by("id")
     serializer_class = UserSerializer
     permission_classes = [IsAdminUser]
 
 
+# region API Docs
 @extend_schema(
     tags=["Users"],
     summary="Получить пользователя по id",
-    responses={200: UserSerializer},
+    description=(
+        "Возвращает пользователя по идентификатору. Сотрудник может просматривать любую учетную "
+        "запись, обычный пользователь только свою."
+    ),
+    responses={
+        200: UserSerializer,
+        401: OpenApiResponse(description="Пользователь не аутентифицирован."),
+        403: OpenApiResponse(description="Недостаточно прав для просмотра чужой учетной записи."),
+    },
 )
+# endregion
 class UserDetailAPIView(generics.RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer

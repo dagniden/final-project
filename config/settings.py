@@ -150,6 +150,63 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Library Management API",
+    "DESCRIPTION": (
+        "API для автоматизации работы библиотеки: ведение каталога книг и экземпляров, "
+        "управление авторами и жанрами, регистрация пользователей, оформление выдач и "
+        "возвратов, а также контроль доступа через JWT."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_SETTINGS": {
+        "persistAuthorization": True,
+        "displayRequestDuration": True,
+    },
+    "COMPONENT_SPLIT_REQUEST": True,
+    "TAGS": [
+        {
+            "name": "Auth",
+            "description": "Регистрация, вход по email и обновление JWT-токенов.",
+        },
+        {
+            "name": "Users",
+            "description": "Профиль текущего пользователя и просмотр учетных записей.",
+        },
+        {
+            "name": "Authors",
+            "description": "Справочник авторов каталога библиотеки.",
+        },
+        {
+            "name": "Genres",
+            "description": "Справочник жанров для классификации книг.",
+        },
+        {
+            "name": "Books",
+            "description": "Карточки книг каталога и агрегатная доступность по экземплярам.",
+        },
+        {
+            "name": "Book Items",
+            "description": "Физические экземпляры книг с инвентарными номерами и статусами.",
+        },
+        {
+            "name": "Loans",
+            "description": "Выдача, возврат и напоминания по экземплярам книг.",
+        },
+    ],
+    "SECURITY": [{"BearerAuth": []}],
+    "COMPONENTS": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "JWT access token. Передавайте в формате `Bearer <token>`.",
+            }
+        }
+    },
+}
+
 
 # ------------------------------------------------------------------------
 # Auth settings

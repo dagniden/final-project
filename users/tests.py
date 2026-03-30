@@ -91,3 +91,24 @@ class UsersAPITestCase(APITestCase):
         response = self.client.get(f"/api/v1/users/{self.admin.id}")
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class DocumentationAPITestCase(APITestCase):
+    def test_schema_endpoint_returns_openapi_document(self):
+        response = self.client.get("/api/schema/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertContains(response, "openapi:")
+        self.assertContains(response, "paths:")
+
+    def test_swagger_ui_endpoint_is_available(self):
+        response = self.client.get("/api/docs/swagger/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertContains(response, "swagger")
+
+    def test_redoc_endpoint_is_available(self):
+        response = self.client.get("/api/docs/redoc/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertContains(response, "redoc")
