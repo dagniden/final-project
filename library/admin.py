@@ -105,7 +105,10 @@ class LoanAdmin(admin.ModelAdmin):
     autocomplete_fields = ("user", "book_item")
     readonly_fields = ("display_is_active", "created_at", "updated_at")
     fieldsets = (
-        (None, {"fields": ("user", "book_item", "issued_at", "due_date", "returned_at")}),
+        (
+            None,
+            {"fields": ("user", "book_item", "issued_at", "due_date", "returned_at")},
+        ),
         ("System", {"fields": ("display_is_active", "created_at", "updated_at")}),
     )
 

@@ -169,12 +169,8 @@ class Command(BaseCommand):
         )
 
         self.stdout.write(self.style.SUCCESS("Demo data is ready."))
-        self.stdout.write(
-            "Staff user: admin@example.com / AdminPass123!"
-        )
-        self.stdout.write(
-            "Reader user: reader@example.com / ReaderPass123!"
-        )
+        self.stdout.write("Staff user: admin@example.com / AdminPass123!")
+        self.stdout.write("Reader user: reader@example.com / ReaderPass123!")
         self.stdout.write(
             f"Authors: {Author.objects.count()}, Genres: {Genre.objects.count()}, "
             f"Book titles: {BookTitle.objects.count()}, Book items: {BookItem.objects.count()}, "
@@ -256,7 +252,9 @@ class Command(BaseCommand):
         return book_item
 
     def _upsert_active_loan(self, *, user, book_item, issued_at, due_date):
-        active_loan = Loan.objects.filter(book_item=book_item, returned_at__isnull=True).first()
+        active_loan = Loan.objects.filter(
+            book_item=book_item, returned_at__isnull=True
+        ).first()
         if active_loan:
             if active_loan.user_id != user.id or active_loan.due_date != due_date:
                 active_loan.user = user
