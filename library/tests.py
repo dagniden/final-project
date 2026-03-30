@@ -490,3 +490,220 @@ class BookManagementAPITestCase(APITestCase):
         self.assertEqual(
             response.data["detail"], "Cannot delete book item linked to loans."
         )
+
+
+class LoanAPITestCase(APITestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username="admin",
+            email="admin@example.com",
+            password="AdminPass123!",
+            is_staff=True,
+        )
+        self.user = User.objects.create_user(
+            username="reader",
+            email="reader@example.com",
+            password="ReaderPass123!",
+        )
+        self.other_user = User.objects.create_user(
+            username="reader2",
+            email="reader2@example.com",
+            password="ReaderPass123!",
+        )
+        self.author = Author.objects.create(full_name="Leo Tolstoy")
+        self.book = BookTitle.objects.create(title="War and Peace")
+        self.book.authors.add(self.author)
+        self.available_item = BookItem.objects.create(
+            book_title=self.book,
+            inventory_number="INV-101",
+            status=BookItem.Status.AVAILABLE,
+        )
+        self.unavailable_item = BookItem.objects.create(
+            book_title=self.book,
+            inventory_number="INV-102",
+            status=BookItem.Status.UNAVAILABLE,
+        )
+        self.loan = Loan.objects.create(
+            user=self.user,
+            book_item=self.available_item,
+            issued_at=timezone.now(),
+            due_date=timezone.now().date() + timedelta(days=14),
+        )
+
+    def test_staff_can_get_loans_list(self):
+        self.client.force_authenticate(self.admin)
+
+        response = self.client.get("/api/v1/loans")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], self.loan.id)
+
+    def test_regular_user_cannot_get_loans_list(self):
+        self.client.force_authenticate(self.user)
+
+        response = self.client.get("/api/v1/loans")
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_staff_can_get_loan_detail(self):
+        self.client.force_authenticate(self.admin)
+
+        response = self.client.get(f"/api/v1/loans/{self.loan.id}")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], self.loan.id)
+        self.assertTrue(response.data["is_active"])
+
+    def test_staff_can_create_loan_for_available_book_item(self):
+        self.loan.returned_at = timezone.now()
+        self.loan.save()
+        self.available_item.refresh_from_db()
+
+        self.client.force_authenticate(self.admin)
+        issued_at = timezone.now()
+        due_date = issued_at.date() + timedelta(days=7)
+
+        response = self.client.post(
+            "/api/v1/loans",
+            {
+                "user": self.other_user.id,
+                "book_item": self.available_item.id,
+                "issued_at": issued_at.isoformat().replace("+00:00", "Z"),
+                "due_date": due_date.isoformat(),
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.available_item.refresh_from_db()
+        self.assertEqual(self.available_item.status, BookItem.Status.LOANED)
+        self.assertTrue(
+            Loan.objects.filter(user=self.other_user, book_item=self.available_item).exists()
+        )
+
+    def test_staff_cannot_create_loan_for_unavailable_book_item(self):
+        self.client.force_authenticate(self.admin)
+        issued_at = timezone.now()
+
+        response = self.client.post(
+            "/api/v1/loans",
+            {
+                "user": self.user.id,
+                "book_item": self.unavailable_item.id,
+                "issued_at": issued_at.isoformat().replace("+00:00", "Z"),
+                "due_date": (issued_at.date() + timedelta(days=7)).isoformat(),
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("book_item", response.data)
+
+    def test_staff_cannot_create_second_active_loan_for_same_book_item(self):
+        self.client.force_authenticate(self.admin)
+        issued_at = timezone.now()
+
+        response = self.client.post(
+            "/api/v1/loans",
+            {
+                "user": self.other_user.id,
+                "book_item": self.available_item.id,
+                "issued_at": issued_at.isoformat().replace("+00:00", "Z"),
+                "due_date": (issued_at.date() + timedelta(days=7)).isoformat(),
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("book_item", response.data)
+
+    def test_staff_can_return_loan(self):
+        self.client.force_authenticate(self.admin)
+        returned_at = self.loan.issued_at + timedelta(days=3)
+
+        response = self.client.patch(
+            f"/api/v1/loans/{self.loan.id}",
+            {"returned_at": returned_at.isoformat().replace("+00:00", "Z")},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.loan.refresh_from_db()
+        self.available_item.refresh_from_db()
+        self.assertEqual(self.loan.returned_at, returned_at)
+        self.assertEqual(self.available_item.status, BookItem.Status.AVAILABLE)
+        self.assertFalse(response.data["is_active"])
+
+    def test_staff_cannot_return_loan_before_issue_date(self):
+        self.client.force_authenticate(self.admin)
+        returned_at = self.loan.issued_at - timedelta(minutes=1)
+
+        response = self.client.patch(
+            f"/api/v1/loans/{self.loan.id}",
+            {"returned_at": returned_at.isoformat().replace("+00:00", "Z")},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("returned_at", response.data)
+
+    def test_staff_cannot_update_immutable_loan_fields(self):
+        self.client.force_authenticate(self.admin)
+
+        response = self.client.patch(
+            f"/api/v1/loans/{self.loan.id}",
+            {"user": self.other_user.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("user", response.data)
+
+    def test_loans_list_supports_active_filter(self):
+        self.loan.returned_at = timezone.now()
+        self.loan.save()
+
+        active_item = BookItem.objects.create(
+            book_title=self.book,
+            inventory_number="INV-103",
+            status=BookItem.Status.AVAILABLE,
+        )
+        active_loan = Loan.objects.create(
+            user=self.other_user,
+            book_item=active_item,
+            issued_at=timezone.now(),
+            due_date=timezone.now().date() + timedelta(days=10),
+        )
+
+        self.client.force_authenticate(self.admin)
+
+        response = self.client.get("/api/v1/loans", {"active": "true"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual([item["id"] for item in response.data], [active_loan.id])
+
+    def test_staff_can_send_reminder_with_stub_response(self):
+        self.client.force_authenticate(self.admin)
+
+        response = self.client.post(f"/api/v1/loans/{self.loan.id}/reminder/send")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["loan_id"], self.loan.id)
+        self.assertEqual(
+            response.data["detail"],
+            "Reminder sending is not configured yet.",
+        )
+
+    def test_staff_cannot_send_reminder_for_returned_loan(self):
+        self.loan.returned_at = timezone.now()
+        self.loan.save()
+        self.client.force_authenticate(self.admin)
+
+        response = self.client.post(f"/api/v1/loans/{self.loan.id}/reminder/send")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "Cannot send a reminder for a returned loan.",
+        )

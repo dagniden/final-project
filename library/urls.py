@@ -5,7 +5,8 @@ from library.views import (AuthorDetailAPIView, AuthorListCreateAPIView,
                            BookAvailabilityAPIView, BookDetailAPIView,
                            BookItemDetailAPIView, BookItemListCreateAPIView,
                            BookListCreateAPIView, GenreDetailAPIView,
-                           GenreListCreateAPIView)
+                           GenreListCreateAPIView, LoanDetailAPIView,
+                           LoanListCreateAPIView, LoanReminderSendAPIView)
 
 app_name = LibraryConfig.name
 
@@ -26,5 +27,12 @@ urlpatterns = [
     ),
     path(
         "book-items/<int:pk>", BookItemDetailAPIView.as_view(), name="book_item_detail"
+    ),
+    path("loans", LoanListCreateAPIView.as_view(), name="loan_list_create"),
+    path("loans/<int:pk>", LoanDetailAPIView.as_view(), name="loan_detail"),
+    path(
+        "loans/<int:pk>/reminder/send",
+        LoanReminderSendAPIView.as_view(),
+        name="loan_reminder_send",
     ),
 ]

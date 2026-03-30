@@ -1,6 +1,7 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from library.models import Author, BookItem, BookTitle, Genre
+from library.models import Author, BookItem, BookTitle, Genre, Loan
 
 
 class AuthorSerializer(serializers.ModelSerializer):
@@ -115,3 +116,48 @@ class BookItemSerializer(serializers.ModelSerializer):
                 "Book item with this inventory number already exists."
             )
         return value
+
+
+class LoanSerializer(serializers.ModelSerializer):
+    is_active = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = Loan
+        fields = (
+            "id",
+            "user",
+            "book_item",
+            "issued_at",
+            "due_date",
+            "returned_at",
+            "is_active",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("id", "is_active", "created_at", "updated_at")
+
+    def validate(self, attrs):
+        if self.instance is not None:
+            immutable_fields = {"user", "book_item", "issued_at"}
+            provided_immutable_fields = immutable_fields.intersection(attrs)
+            if provided_immutable_fields:
+                raise serializers.ValidationError(
+                    {
+                        field: "This field cannot be updated after loan creation."
+                        for field in provided_immutable_fields
+                    }
+                )
+
+        return attrs
+
+    def create(self, validated_data):
+        try:
+            return super().create(validated_data)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(exc.message_dict)
+
+    def update(self, instance, validated_data):
+        try:
+            return super().update(instance, validated_data)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(exc.message_dict)
