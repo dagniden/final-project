@@ -15,6 +15,7 @@ django-cors-headers = "^4.9.0"
 drf-spectacular = "^0.29.0"
 pillow = "^12.1.1"
 python-decouple = "^3.8"
+psycopg = "^3.2"
 
 
 [tool.poetry.group.lint.dependencies]
